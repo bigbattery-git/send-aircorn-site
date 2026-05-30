@@ -1,11 +1,13 @@
-import { PrismaClient } from "../../../src/generated/client";
+import { prisma } from "../../../lib/prisma"
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req : NextRequest){
     const searchParams = req.nextUrl.searchParams; // 의미 없음
 
-    const prisma = new PrismaClient();
-
+    const response : GETAircornResponse = {
+        success : false,
+        message : null
+    }
     try{
         const lastAircornData = await prisma.aircornLog.findFirst({
             select : {
@@ -18,22 +20,15 @@ export async function GET(req : NextRequest){
             }
         })
 
-        if(!lastAircornData){
-            return NextResponse.json({}, {status:200})
-        }
-        return NextResponse.json({success : true, message : "조회에 성공했습니다", data : lastAircornData}, {status:200});
+        response.success = true;
+        response.message = "조회에 성공했습니다.";
+        response.data = lastAircornData;
+
+        return NextResponse.json(response, {status:200});
     } catch (e){
         console.error("GET /api/aircorns : ", e);
-        return NextResponse.json({success : false, message : "서버 오류가 발생했습니다."}, {status : 500});
-    }
-}
-
-interface POSTaircornsResponse {
-    success : boolean,
-    message : null | string,
-    data ?: {
-        nickname : string,
-        lastTemp : number
+        response.message = "서버 오류가 발생했습니다."
+        return NextResponse.json(response, {status : 500});
     }
 }
 
@@ -41,7 +36,7 @@ export async function POST(req : NextRequest){
     // nickname, lastTemp
     const data = await req.json();
 
-    const response : POSTaircornsResponse = {
+    const response : POSTAircornsResponse = {
         success : false,
         message : null 
     }
@@ -65,7 +60,6 @@ export async function POST(req : NextRequest){
     }
 
     try{
-        const prisma = new PrismaClient();
         const responseData = {
             nickname : data.nickname,
             lastTemp : data.lastTemp
